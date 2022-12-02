@@ -20,10 +20,20 @@ def getCoordinates(kpts):
 
 def getXY(coordinates, pt):
     '''
-    Gets the ex, y coordinates for a specific point
+    Gets the x, y coordinates for a specific point
     '''
     x, y = coordinates[pt][1:3]
     return (x, y)
+
+def getDistance(coordinates, p1, p2):
+    '''
+    Gets the distance between two points p1 and p2
+    # NOTE: KEYPOINT MAP HERE: https://github.com/JRKagumba/2D-video-pose-estimation-yolov7
+    '''
+    x1, y1 = coordinates[p1][1:3]
+    x2, y2 = coordinates[p2][1:3]
+    distance = math.sqrt(((y2 - y1) ** 2) + ((x2 - x1) ** 2))
+    return distance
 
 # =3.0=Takes three points and returns the angle between them========
 def getAngle(coordinates, points):
@@ -47,7 +57,7 @@ def getAngle(coordinates, points):
     if angle < 0:
         angle += 360
     if angle > 180:
-        angle -= 180
+        angle = 360 - angle
 
     return int(angle)
 
@@ -69,6 +79,46 @@ def getImportantAngles(coordinates):
     left_arm_shoulder = getAngle(coordinates, (6, 5, 7))
 
     return [right_elbow, left_elbow, right_arm_shoulder, left_arm_shoulder]
+
+def getImportantDistances(coordinates):
+    '''
+    Gets the most significant distances which are used to determine punch type
+    # NOTE: KEYPOINT MAP HERE: https://github.com/JRKagumba/2D-video-pose-estimation-yolov7
+    # right arm to right shoulder = (6,10)
+    # left arm to left shoulder =(5,9)
+    # Right arm to right hip (10, 12)
+    # Left arm to left hip (9, 11)
+    # FOR A STATIC DISTANCE, left/right shoulder to left/right hip
+    # Right shoulder to right hip = (6, 12)
+    # Left shoulder to left hip = (5, 11)
+    '''
+    right_arm_shoulder = getDistance(coordinates, 6, 10)
+    left_arm_shoulder = getDistance(coordinates, 5, 9)
+    right_arm_hip = getDistance(coordinates, 10, 12)
+    left_arm_hip = getDistance(coordinates, 9, 11)
+    right_shoulder_hip = getDistance(coordinates, 6, 12)
+    left_shoulder_hip = getDistance(coordinates, 5, 11)
+
+    return [right_arm_shoulder, left_arm_shoulder, right_arm_hip, left_arm_hip, right_shoulder_hip, left_shoulder_hip]
+
+def getImportantCoordinates(coordinates):
+    '''
+    Gets the most signifiant coordinates (x, y) for different points
+    Right hand = 10
+    Left hand = 9
+    Right shoulder = 6
+    Left shoulder = 5
+    Right hip = 12
+    Left hip = 11
+    '''
+    x1, y1 = coordinates[10][1:3]
+    x2, y2 = coordinates[9][1:3]
+    x3, y3 = coordinates[6][1:3]
+    x4, y4 = coordinates[5][1:3]
+    x5, y5 = coordinates[12][1:3]
+    x6, y6 = coordinates[11][1:3]
+    
+    return [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x5, y5), (x6, y6)]
 
 # ===========================================
 
@@ -101,18 +151,20 @@ def drawImportantAngles(image, coordinates):
 def drawImportantAngleText(draw, coordinates):
     impAngles = getImportantAngles(coordinates)
 
+    # d represents the distance the text is drawn from the keypoint
+    d = 20
     # Right Elbow
     x, y = getXY(coordinates, 8)
-    draw.text((x+50, y+50), f"{impAngles[0]}", fill=(255, 255, 255))
+    draw.text((x+d, y+d), f"{impAngles[0]}, ({x}, {y})", fill=(255, 255, 255))
     # Left Elbow
     x, y = getXY(coordinates, 7)
-    draw.text((x+50, y+50), f"{impAngles[1]}", fill=(255, 255, 255))
+    draw.text((x+d, y+d), f"{impAngles[1]}, ({x}, {y})", fill=(255, 255, 255))
     # Right Shoulder
     x, y = getXY(coordinates, 6)
-    draw.text((x+50, y+50), f"{impAngles[2]}", fill=(255, 255, 255))
+    draw.text((x+d, y+d), f"{impAngles[2]}, ({x}, {y})", fill=(255, 255, 255))
     # Left Shoulder
     x, y = getXY(coordinates, 5)
-    draw.text((x+50, y+50), f"{impAngles[3]}", fill=(255, 255, 255))
+    draw.text((x+d, y+d), f"{impAngles[3]}, ({x}, {y})", fill=(255, 255, 255))
 
 def drawAngle(image, coordinates, p1, p2, p3):
     '''

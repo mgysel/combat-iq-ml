@@ -10,7 +10,7 @@ from utils.plots import output_to_keypoint, plot_skeleton_kpts
 from utils.general import non_max_suppression_kpt, strip_optimizer
 from torchvision import transforms
 
-from trainer import getAngle, drawAngle, getCoordinates, getImportantAngles, drawImportantAngles, getXY, drawImportantAngleText
+from trainer import getAngle, drawAngle, getCoordinates, getImportantAngles, drawImportantAngles, getXY, drawImportantAngleText, getImportantDistances
 from PIL import ImageFont, ImageDraw, Image
 
 
@@ -78,9 +78,15 @@ def run(poseweights= 'yolov7-w6-pose.pt', source='pose.mp4', device='cpu'):
                     kpts = output[idx, 7:].T
                     coordinates = getCoordinates(kpts)
                     
-                    # Get angles, map from 0 to 100
-                    # Get important angles from coordinates
+                    # Get important angles/distances from coordinates
                     impAngles = getImportantAngles(coordinates)
+                    impDistances = getImportantDistances(coordinates)
+                    print("IMPORTANT ANGLES")
+                    print(impAngles)
+                    print("IMPORTANT DISTANCES")
+                    print(impDistances)
+
+                    # Draw angles on image
                     drawImportantAngles(img, coordinates)
                     print("Important angles: right arm, left arm, right shoulder, left shoulder")
                     print(impAngles)
