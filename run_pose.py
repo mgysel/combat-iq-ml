@@ -9,15 +9,17 @@ from models.experimental import attempt_load
 from utils.plots import output_to_keypoint, plot_skeleton_kpts
 from utils.general import non_max_suppression_kpt, strip_optimizer
 from torchvision import transforms
+import json
+import csv
 
-from trainer import getAngle, drawAngle, getCoordinates, getImportantAngles, drawImportantAngles, getXY, drawImportantAngleText, getImportantDistances
+from trainer import getAngle, drawAngle, getCoordinates, getImportantAngles, drawImportantAngles, getXY, drawImportantAngleText, getImportantDistances, getImportantCoordinates
 from PIL import ImageFont, ImageDraw, Image
 
 
 @torch.no_grad()
-def run(poseweights= 'yolov7-w6-pose.pt', source='pose.mp4', device='cpu'):
+def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
 
-    path = source
+    path = sourcePath
     ext = path.split('/')[-1].split('.')[-1].strip().lower()
     if ext in ["mp4", "webm", "avi"] or ext not in ["mp4", "webm", "avi"] and ext.isnumeric():
         input_path = int(path) if path.isnumeric() else path
@@ -41,7 +43,13 @@ def run(poseweights= 'yolov7-w6-pose.pt', source='pose.mp4', device='cpu'):
         # Used to count pushups and keep track of direction
         bcount = 0
         direction = 0
+        # Used to store points, angles, distances
+        output_data = []
         while cap.isOpened:
+            # NOTE: THIS IS TO BREAK OUT AFTER ONLY 5 FRAMES
+            # SAVES TIME!!!!
+            if (frame_count > 1):
+                break
 
             print(f"Frame {frame_count} Processing")
             ret, frame = cap.read()
@@ -71,6 +79,7 @@ def run(poseweights= 'yolov7-w6-pose.pt', source='pose.mp4', device='cpu'):
 
                 # This loops through each person in the output (likely just 1)
                 for idx in range(output.shape[0]):
+
                     # NOTE: Below is used to plot entire skeleton
                     # plot_skeleton_kpts(img, output[idx, 7:].T, 3)
 
@@ -81,10 +90,21 @@ def run(poseweights= 'yolov7-w6-pose.pt', source='pose.mp4', device='cpu'):
                     # Get important angles/distances from coordinates
                     impAngles = getImportantAngles(coordinates)
                     impDistances = getImportantDistances(coordinates)
+                    impCoordinates = getImportantCoordinates(coordinates)
                     print("IMPORTANT ANGLES")
                     print(impAngles)
                     print("IMPORTANT DISTANCES")
                     print(impDistances)
+                    print("IMPORTANT COORDINATES")
+                    print(impCoordinates)
+
+                    # Store angles, distances, coordinates in output_data
+                    concat = impAngles + impDistances + impCoordinates
+                    output_data.append(concat)
+                    print("CONCATENATED")
+                    print(concat)
+                    print("OUTPUT DATA")
+                    print(output_data)
 
                     # Draw angles on image
                     drawImportantAngles(img, coordinates)
@@ -154,14 +174,18 @@ def run(poseweights= 'yolov7-w6-pose.pt', source='pose.mp4', device='cpu'):
                 break
 
         cap.release()
+        with open(outputPath, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerows(output_data)
         avg_fps = total_fps / frame_count
         print(f"Average FPS: {avg_fps:.3f}")
 
 
 def parse_opt():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--sourcePath', type=str, help='path to video or 0 for webcam')
+    parser.add_argument('--outputPath', type=str, help='output file location/name')
     parser.add_argument('--poseweights', nargs='+', type=str, default='yolov7-w6-pose.pt', help='model path(s)')
-    parser.add_argument('--source', type=str, help='path to video or 0 for webcam')
     parser.add_argument('--device', type=str, default='cpu', help='cpu/0,1,2,3(gpu)')
     opt = parser.parse_args()
     return opt
