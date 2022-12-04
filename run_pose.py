@@ -48,8 +48,8 @@ def run(sourcePath, outputDataPath, outputVideoPath, poseweights='yolov7-w6-pose
         while cap.isOpened:
             # NOTE: THIS IS TO BREAK OUT AFTER ONLY 5 FRAMES
             # SAVES TIME!!!!
-            if (frame_count > 1):
-                break
+            # if (frame_count > 1):
+            #     break
 
             print(f"Frame {frame_count} Processing")
             ret, frame = cap.read()
@@ -94,6 +94,7 @@ def run(sourcePath, outputDataPath, outputVideoPath, poseweights='yolov7-w6-pose
 
                     # Store angles, distances, coordinates in output_data
                     concat = impAngles + impDistances + impCoordinates
+                    # TODO: FIX THIS SO ONLY ADDING ONE VALUE
                     output_data.append(concat)
 
                     # Draw angles on image
