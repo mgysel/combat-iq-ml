@@ -17,7 +17,7 @@ from PIL import ImageFont, ImageDraw, Image
 
 
 @torch.no_grad()
-def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
+def run(sourcePath, outputDataPath, outputVideoPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
 
     path = sourcePath
     ext = path.split('/')[-1].split('.')[-1].strip().lower()
@@ -37,7 +37,7 @@ def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
         vid_write_image = letterbox(cap.read()[1], (frame_width), stride=64, auto=True)[0]
         resize_height, resize_width = vid_write_image.shape[:2]
         out_video_name = "output" if path.isnumeric else f"{input_path.split('/')[-1].split('.')[0]}"
-        out = cv2.VideoWriter(f"{out_video_name}_result4.mp4", cv2.VideoWriter_fourcc(*'mp4v'), 30, (resize_width, resize_height))
+        out = cv2.VideoWriter(outputVideoPath, cv2.VideoWriter_fourcc(*'mp4v'), 30, (resize_width, resize_height))
 
         frame_count, total_fps = 0, 0
         # Used to count pushups and keep track of direction
@@ -58,7 +58,7 @@ def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
 
                 # preprocess image
                 image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
-                image = letterbox(image, (frame_width), stride=64, auto=True)[0]
+                image = letterbox(image, (1280), stride=64, auto=True)[0]
                 image_ = image.copy()
                 image = transforms.ToTensor()(image)
                 image = torch.tensor(np.array([image.numpy()]))
@@ -91,25 +91,13 @@ def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
                     impAngles = getImportantAngles(coordinates)
                     impDistances = getImportantDistances(coordinates)
                     impCoordinates = getImportantCoordinates(coordinates)
-                    print("IMPORTANT ANGLES")
-                    print(impAngles)
-                    print("IMPORTANT DISTANCES")
-                    print(impDistances)
-                    print("IMPORTANT COORDINATES")
-                    print(impCoordinates)
 
                     # Store angles, distances, coordinates in output_data
                     concat = impAngles + impDistances + impCoordinates
                     output_data.append(concat)
-                    print("CONCATENATED")
-                    print(concat)
-                    print("OUTPUT DATA")
-                    print(output_data)
 
                     # Draw angles on image
                     drawImportantAngles(img, coordinates)
-                    print("Important angles: right arm, left arm, right shoulder, left shoulder")
-                    print(impAngles)
                     
                     # For progress bar
                     angle = getAngle(coordinates, (5, 7, 9))
@@ -174,7 +162,7 @@ def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
                 break
 
         cap.release()
-        with open(outputPath, "w", newline="") as f:
+        with open(outputDataPath, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerows(output_data)
         avg_fps = total_fps / frame_count
@@ -184,7 +172,8 @@ def run(sourcePath, outputPath, poseweights='yolov7-w6-pose.pt', device='cpu'):
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sourcePath', type=str, help='path to video or 0 for webcam')
-    parser.add_argument('--outputPath', type=str, help='output file location/name')
+    parser.add_argument('--outputDataPath', type=str, help='output data file location/name')
+    parser.add_argument('--outputVideoPath', type=str, help='output video file location/name')
     parser.add_argument('--poseweights', nargs='+', type=str, default='yolov7-w6-pose.pt', help='model path(s)')
     parser.add_argument('--device', type=str, default='cpu', help='cpu/0,1,2,3(gpu)')
     opt = parser.parse_args()
