@@ -21,7 +21,7 @@ def run(sourcePath, outputDataPath, outputVideoPath, poseweights='yolov7-w6-pose
 
     path = sourcePath
     ext = path.split('/')[-1].split('.')[-1].strip().lower()
-    if ext in ["mp4", "webm", "avi"] or ext not in ["mp4", "webm", "avi"] and ext.isnumeric():
+    if ext in ["mp4", "webm", "avi", "mov"] or ext not in ["mp4", "webm", "avi", "mov"] and ext.isnumeric():
         input_path = int(path) if path.isnumeric() else path
         device = select_device(opt.device)
         half = device.type != 'cpu'
